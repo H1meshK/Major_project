@@ -1,113 +1,151 @@
 import pandas as pd
 import streamlit as st
+from utils import load_supplier_data, calculate_kpi_scores
 
 st.set_page_config(page_title="Supplier Risk System", layout="wide")
 
-# Title
 st.title("Supplier Evaluation & Risk Scoring System")
 st.markdown("### Real-time Supplier Risk Analysis Dashboard")
 
 # Load data
-df = pd.read_csv("suppliers.csv")
+df = load_supplier_data()
+df = calculate_kpi_scores(df)
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.header("⚙️ Model Configuration")
+# ============ OVERVIEW ============
+st.markdown("""
+Welcome to the **Supplier Evaluation & Risk Scoring System**. This dashboard provides 
+comprehensive analysis of supplier performance using two complementary methods:
 
-delivery_weight = st.sidebar.slider("Delivery Weight", 0.0, 1.0, 0.3)
-quality_weight = st.sidebar.slider("Quality Weight", 0.0, 1.0, 0.3)
-cost_weight = st.sidebar.slider("Cost Weight", 0.0, 1.0, 0.2)
-compliance_weight = st.sidebar.slider("Compliance Weight", 0.0, 1.0, 0.2)
+1. **Weighted Risk Scoring Method** - Customizable multi-factor risk evaluation
+2. **Data Envelopment Analysis (DEA)** - Efficiency frontier analysis
 
-if round(delivery_weight + quality_weight + cost_weight + compliance_weight, 2) != 1.0:
-    st.sidebar.error("⚠️ Total weight must equal 1.0")
+Select a page from the sidebar to get started!
+""")
 
-# ---------------- KPI CALCULATION ----------------
-df["DeliveryScore"] = df["OnTimeDelivery"] / 100
-df["QualityScore"] = 1 - (df["DefectRate"] / 100)
-df["CostScore"] = 1 - (df["CostVariance"] / 100)
-df["ComplianceScoreNorm"] = df["ComplianceScore"] / 100
-
-df["RiskScore"] = (
-    delivery_weight * df["DeliveryScore"] +
-    quality_weight * df["QualityScore"] +
-    cost_weight * df["CostScore"] +
-    compliance_weight * df["ComplianceScoreNorm"]
-)
-
-# ---------------- CLASSIFICATION ----------------
-def classify(score):
-    if score >= 0.8:
-        return "Low Risk"
-    elif score >= 0.6:
-        return "Medium Risk"
-    else:
-        return "High Risk"
-
-df["RiskCategory"] = df["RiskScore"].apply(classify)
-
-# Sort
-df = df.sort_values(by="RiskScore")
-
-# ---------------- KPI CARDS ----------------
-st.subheader("📌 Key Metrics")
+# ============ DATASET OVERVIEW ============
+st.subheader("Dataset Overview")
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Total Suppliers", len(df))
-col2.metric("High Risk", (df["RiskCategory"] == "High Risk").sum())
-col3.metric("Medium Risk", (df["RiskCategory"] == "Medium Risk").sum())
-col4.metric("Low Risk", (df["RiskCategory"] == "Low Risk").sum())
-
-# ---------------- FILTER ----------------
-st.subheader("🔍 Filter View")
-option = st.selectbox("Select Supplier Category", ["All", "High Risk", "Medium Risk", "Low Risk"])
-
-if option != "All":
-    filtered_df = df[df["RiskCategory"] == option]
-else:
-    filtered_df = df
-
-# ---------------- MAIN LAYOUT ----------------
-col1, col2 = st.columns(2)
-
 with col1:
-    st.subheader("📋 Supplier Performance Table")
-    st.dataframe(filtered_df, use_container_width=True)
+    st.metric("Total Suppliers", len(df))
 
 with col2:
-    st.subheader("📊 Risk Distribution")
-    st.bar_chart(filtered_df["RiskCategory"].value_counts())
+    st.metric("Avg Delivery", f"{df['OnTimeDelivery'].mean():.1f}%")
 
-# ---------------- INSIGHTS ----------------
-st.subheader("🚨 Critical Insights")
+with col3:
+    st.metric("Avg Compliance", f"{df['ComplianceScore'].mean():.1f}")
 
-worst = df.iloc[0]
-best = df.iloc[-1]
+with col4:
+    st.metric("Avg Defect Rate", f"{df['DefectRate'].mean():.1f}%")
+
+# ============ PERFORMANCE SUMMARY ============
+st.subheader("Performance Summary")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.error(f"Worst Supplier: {worst['Supplier']} (Score: {round(worst['RiskScore'],2)})")
+    st.write("**On-Time Delivery Distribution**")
+    delivery_hist = df["OnTimeDelivery"].value_counts().sort_index()
+    st.bar_chart(delivery_hist)
 
 with col2:
-    st.success(f"Best Supplier: {best['Supplier']} (Score: {round(best['RiskScore'],2)})")
+    st.write("**Defect Rate Distribution**")
+    defect_hist = df["DefectRate"].value_counts().sort_index()
+    st.bar_chart(defect_hist)
 
-# ---------------- KPI TRENDS ----------------
-st.subheader("📈 KPI Trends Across Suppliers")
-st.line_chart(df[["DeliveryScore", "QualityScore", "CostScore"]])
+# ============ SUPPLIER TABLE ============
+st.subheader("Supplier Performance Data")
 
-# ---------------- ALERT SYSTEM ----------------
-high_risk_count = (df["RiskCategory"] == "High Risk").sum()
+col1, col2, col3 = st.columns([3, 1, 1])
 
-if high_risk_count > 0:
-    st.error(f"⚠️ ALERT: {high_risk_count} High Risk Suppliers detected!")
+with col1:
+    st.write("Raw supplier metrics from suppliers.csv")
+
+with col2:
+    show_summary = st.checkbox("Show Summary Only", value=False)
+
+with col3:
+    if st.button("Show All Columns"):
+        show_summary = False
+
+if show_summary:
+    display_cols = ["Supplier", "OnTimeDelivery", "DefectRate", "CostVariance", "ComplianceScore"]
 else:
-    st.success("✅ No High Risk Suppliers")
+    display_cols = ["Supplier", "OnTimeDelivery", "DefectRate", "CostVariance", "ComplianceScore"]
 
-# ---------------- DOWNLOAD ----------------
-st.subheader("⬇️ Export Data")
+display_df = df[display_cols].copy()
+st.dataframe(display_df, use_container_width=True)
+
+# ============ KPI BREAKDOWN ============
+st.subheader("Calculated KPI Scores")
+
+st.write("""
+The system calculates normalized KPI scores for each supplier:
+- **Delivery Score** = OnTimeDelivery / 100
+- **Quality Score** = 1 - (DefectRate / 100)
+- **Cost Score** = 1 - (CostVariance / 100)
+- **Compliance Score** = ComplianceScore / 100
+""")
+
+kpi_df = df[["Supplier", "DeliveryScore", "QualityScore", "CostScore", "ComplianceScoreNorm"]].copy()
+kpi_df = kpi_df.round(3)
+st.dataframe(kpi_df, use_container_width=True)
+
+# ============ KEY STATISTICS ============
+st.subheader("Key Statistics")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.write("**Delivery Score**")
+    st.metric("Mean", f"{df['DeliveryScore'].mean():.3f}")
+    st.metric("Range", f"{df['DeliveryScore'].min():.3f} - {df['DeliveryScore'].max():.3f}")
+
+with col2:
+    st.write("**Quality Score**")
+    st.metric("Mean", f"{df['QualityScore'].mean():.3f}")
+    st.metric("Range", f"{df['QualityScore'].min():.3f} - {df['QualityScore'].max():.3f}")
+
+with col3:
+    st.write("**Cost Score**")
+    st.metric("Mean", f"{df['CostScore'].mean():.3f}")
+    st.metric("Range", f"{df['CostScore'].min():.3f} - {df['CostScore'].max():.3f}")
+
+with col4:
+    st.write("**Compliance Score**")
+    st.metric("Mean", f"{df['ComplianceScoreNorm'].mean():.3f}")
+    st.metric("Range", f"{df['ComplianceScoreNorm'].min():.3f} - {df['ComplianceScoreNorm'].max():.3f}")
+
+# ============ INSTRUCTIONS ============
+st.subheader("Getting Started")
+
+st.markdown("""
+### Choose your analysis method:
+
+**Weighted Risk Scoring Method**
+- Customize weights for each KPI factor
+- Get weighted risk scores and categorization
+- Real-time interactive dashboards
+- Filter suppliers by risk level
+
+Navigate to **Weighted Method** in the sidebar
+
+**Data Envelopment Analysis (DEA)**
+- Identify efficiency frontiers
+- Benchmark suppliers against each other
+- Input-output optimization analysis
+- Detailed efficiency rankings
+
+Navigate to **DEA Analysis** in the sidebar
+""")
+
+# ============ DOWNLOAD OPTION ============
+st.subheader("Export Raw Data")
+
 st.download_button(
-    "Download Full Report",
-    df.to_csv(index=False),
-    "supplier_report.csv"
+    label="Download All Supplier Data (CSV)",
+    data=df.to_csv(index=False),
+    file_name="supplier_data_all.csv",
+    mime="text/csv"
 )
