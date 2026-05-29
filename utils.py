@@ -85,6 +85,7 @@ def classify_risk(score):
 
 def load_supplier_data():
     """Load supplier data from CSV"""
+    # return pd.read_csv("suppliers_large_approx100k.csv")
     return pd.read_csv("suppliers.csv")
 
 
