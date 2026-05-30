@@ -44,8 +44,6 @@ with st.expander("About this Dashboard", expanded=False):
     • Procurement Risk Monitoring
     """)    
 
-st.divider()
-
 # ============ DATA LOADING ============
 df = load_supplier_data()
 df = calculate_kpi_scores(df)
