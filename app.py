@@ -4,14 +4,44 @@ from utils import load_supplier_data, calculate_kpi_scores
 
 st.set_page_config(page_title="Supplier Risk System", layout="wide")
 
-st.title("Supplier Evaluation & Risk Scoring System")
+st.title("JMP Jalandhar - Supplier Risk & Performance Analytics System")
+with st.expander("About this Dashboard", expanded=False):
+    st.info("""
+    This dashboard provides procurement managers with a centralized platform
+    for evaluating supplier reliability, operational risks, quality performance,
+    cost efficiency and compliance metrics.
+
+    The system combines:
+    * Weighted Risk Scoring Analysis
+    * Data Envelopment Analysis (DEA)
+    * Supplier Benchmarking
+    * Procurement Risk Monitoring
+    """)    
 st.markdown("### Real-time Supplier Risk Analysis Dashboard")
 
 # Load data
 df = load_supplier_data()
 df = calculate_kpi_scores(df)
 
-# ============ OVERVIEW ============
+st.subheader("Business Context")
+
+st.markdown("""
+JMP Jalandhar relies on multiple suppliers for maintaining manufacturing
+continuity and operational excellence.
+
+This system assists procurement teams in:
+
+✅ Monitoring supplier performance
+
+✅ Identifying high-risk vendors
+
+✅ Benchmarking supplier efficiency
+
+✅ Supporting supplier selection decisions
+
+✅ Improving supply chain resilience
+""")
+
 st.markdown("""
 Welcome to the **Supplier Evaluation & Risk Scoring System**. This dashboard provides 
 comprehensive analysis of supplier performance using two complementary methods:
@@ -22,22 +52,62 @@ comprehensive analysis of supplier performance using two complementary methods:
 Select a page from the sidebar to get started!
 """)
 
+
+st.subheader("Available Analysis Modules")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.success("""
+    ### Weighted Risk Scoring
+
+    Evaluate suppliers using customizable KPI weights.
+
+    ✔ Risk Categorization
+
+    ✔ Supplier Ranking
+
+    ✔ Performance Monitoring
+    """)
+
+with col2:
+    st.info("""
+    ### DEA Efficiency Analysis
+
+    Benchmark suppliers using efficiency frontier analysis.
+
+    ✔ Efficiency Scores
+
+    ✔ Benchmarking
+
+    ✔ Improvement Opportunities
+    """)
+
+    
 # ============ DATASET OVERVIEW ============
 st.subheader("Dataset Overview")
 
 col1, col2, col3, col4 = st.columns(4)
 
-with col1:
-    st.metric("Total Suppliers", len(df))
+col1.metric(
+    "Total Vendors",
+    len(df)
+)
 
-with col2:
-    st.metric("Avg Delivery", f"{df['OnTimeDelivery'].mean():.1f}%")
+col2.metric(
+    "Avg Delivery",
+    f"{df['OnTimeDelivery'].mean():.1f}%"
+)
 
-with col3:
-    st.metric("Avg Compliance", f"{df['ComplianceScore'].mean():.1f}")
+col3.metric(
+    "Avg Compliance",
+    f"{df['ComplianceScore'].mean():.1f}%"
+)
 
-with col4:
-    st.metric("Avg Defect Rate", f"{df['DefectRate'].mean():.1f}%")
+col4.metric(
+    "Avg Quality",
+    f"{100-df['DefectRate'].mean():.1f}%"
+)
 
 # ============ PERFORMANCE SUMMARY ============
 st.subheader("Performance Summary")
@@ -91,6 +161,23 @@ The system calculates normalized KPI scores for each supplier:
 kpi_df = df[["Supplier", "DeliveryScore", "QualityScore", "CostScore", "ComplianceScoreNorm"]].copy()
 kpi_df = kpi_df.round(3)
 st.dataframe(kpi_df, use_container_width=True)
+
+st.subheader("Executive Summary")
+
+best_delivery = df["OnTimeDelivery"].max()
+avg_defect = df["DefectRate"].mean()
+
+st.success(
+    f"""
+    Current supplier network consists of {len(df)} vendors.
+
+    Average delivery performance is {df['OnTimeDelivery'].mean():.1f}%,
+    while average defect rate remains {avg_defect:.1f}%.
+
+    This dashboard enables proactive identification of supplier risks
+    and efficiency improvement opportunities.
+    """
+)
 
 # ============ KEY STATISTICS ============
 st.subheader("Key Statistics")
