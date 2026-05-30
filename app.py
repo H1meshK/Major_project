@@ -23,25 +23,19 @@ st.markdown("### Real-time Supplier Risk Analysis Dashboard")
 df = load_supplier_data()
 df = calculate_kpi_scores(df)
 
-st.subheader("Business Context")
+with st.expander("Business Context", expanded=False):
+    st.markdown("""
+    JMP Jalandhar relies on multiple suppliers for maintaining manufacturing
+    continuity and operational excellence.
 
-st.markdown("""
-JMP Jalandhar relies on multiple suppliers for maintaining manufacturing
-continuity and operational excellence.
-
-This system assists procurement teams in:
-
-✅ Monitoring supplier performance
-
-✅ Identifying high-risk vendors
-
-✅ Benchmarking supplier efficiency
-
-✅ Supporting supplier selection decisions
-
-✅ Improving supply chain resilience
-""")
-
+    This system assists procurement teams in:
+    * Monitoring supplier performance
+    * Identifying high-risk vendors
+    * Benchmarking supplier efficiency
+    * Supporting supplier selection decisions
+    * Improving supply chain resilience
+    """)
+    
 st.markdown("""
 Welcome to the **Supplier Evaluation & Risk Scoring System**. This dashboard provides 
 comprehensive analysis of supplier performance using two complementary methods:

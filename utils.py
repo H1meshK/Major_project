@@ -90,10 +90,35 @@ def load_supplier_data():
 
 
 def calculate_kpi_scores(df):
-    """Calculate KPI scores for suppliers"""
+
     df_copy = df.copy()
+
     df_copy["DeliveryScore"] = df_copy["OnTimeDelivery"] / 100
-    df_copy["QualityScore"] = 1 - (df_copy["DefectRate"] / 100)
-    df_copy["CostScore"] = 1 - (df_copy["CostVariance"] / 100)
-    df_copy["ComplianceScoreNorm"] = df_copy["ComplianceScore"] / 100
+
+    df_copy["QualityScore"] = 1 - (
+        df_copy["DefectRate"] / 100
+    )
+
+    df_copy["CostScore"] = 1 - (
+        df_copy["CostVariance"] / 100
+    )
+
+    df_copy["ComplianceScoreNorm"] = (
+        df_copy["ComplianceScore"] / 100
+    )
+
+    df_copy["LeadTimeScore"] = 1 - (
+        df_copy["LeadTime"] /
+        df_copy["LeadTime"].max()
+    )
+
+    df_copy["FulfillmentScore"] = (
+        df_copy["FulfillmentRate"] / 100
+    )
+
+    df_copy["ResponseScore"] = 1 - (
+        df_copy["ResponseTime"] /
+        df_copy["ResponseTime"].max()
+    )
+
     return df_copy
